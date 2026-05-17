@@ -69,4 +69,3 @@ The task overview paper should be cited once available. A provisional BibTeX ent
 
 - ArGuard task website: <https://araieval.github.io/ArGuard2026/>
 - ArAIEval shared task archive: <https://araieval.github.io/>
-- Previous ArAIEval ArabicNLP 2024 repository: <https://gitlab.com/araieval/araieval_arabicnlp24>
