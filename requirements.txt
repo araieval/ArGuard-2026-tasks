@@ -1,0 +1,10 @@
+numpy
+scikit-learn
+scipy
+pandas
+jsonlines
+tqdm
+torch
+torchvision
+transformers
+Pillow
