@@ -1,0 +1,14 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+*.zip
+*.tar.gz
+*.tgz
+*.pt
+*.pth
+*.ckpt
+*.bin
