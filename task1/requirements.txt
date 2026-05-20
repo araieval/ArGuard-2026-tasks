@@ -1,0 +1,22 @@
+# Core
+numpy
+scikit-learn
+scipy
+pandas
+tqdm
+Pillow
+
+# Hugging Face stack
+datasets>=2.18
+huggingface_hub>=0.24
+transformers>=4.46
+tokenizers
+accelerate>=0.30
+
+# PyTorch (CPU or CUDA; install the wheel that matches your platform)
+torch>=2.1
+torchvision
+
+# Optional: notebooks
+jupyter
+ipykernel
