@@ -277,5 +277,4 @@ The released dataset is distributed under **CC BY-NC 4.0** (non-commercial resea
 ## Citation and contact
 
 - **Website:** https://araieval.gitlab.io/ArGuard2026/
-- **Email:** arguard2026-organizers@googlegroups.com
-- **Citation:** an overview paper will be released alongside the shared task. A provisional BibTeX entry is provided in [`../bibtex/bibliography.bib`](../bibtex/bibliography.bib).
+- **Email:** arguard2026-organizers@googlegroups.co
