@@ -112,6 +112,14 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    # Quiet the noisy probing that the `datasets` / `huggingface_hub` libraries
+    # emit at INFO level (404s on legacy loader scripts, 501 from the datasets
+    # server, redirect HEAD requests, etc.). These are normal and not errors.
+    for noisy in (
+        "datasets", "huggingface_hub", "filelock", "urllib3", "fsspec",
+        "httpx", "httpcore", "hf_xet",
+    ):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
     args = parse_args()
 
     splits_dir = args.output_dir / "splits"
