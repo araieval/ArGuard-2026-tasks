@@ -117,7 +117,7 @@ Each JSONL record:
     "id": "f9a8…b1.jpg",
     "image_path": "img/f9a8…b1.jpg",
     "text": "OCR-extracted Arabic text…",
-    "label": "Hateful" | "Not Hateful" | null,
+    "label": "Hateful" | "Not Hateful",
     "fine_grained_label": ["Mocking", "Incitement"],
     "annotations": []
 }
