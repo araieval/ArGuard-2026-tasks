@@ -1,5 +1,5 @@
 """
-Text-only baseline for ArGuard Task 1 (all three subtasks).
+Text-only baseline for ArGuard 2026 Task 1 / Track A (both subtasks).
 
 Reads JSONL splits produced by ``data/download_data.py``:
 
@@ -12,27 +12,21 @@ Reads JSONL splits produced by ``data/download_data.py``:
         "annotations": []
     }
 
-For Subtasks 1B/1C, the training and dev sets are filtered to the
-corresponding binary subset (``Hateful`` for 1B, ``Not Hateful`` for 1C).
-Prediction is run on the unfiltered target split, so the resulting
-submission can be scored directly against the gold-positive subset.
+Subtask A1 is binary single-label; Subtask A2 is multi-label over the
+unified fine-grained taxonomy. Both subtasks train on the full
+train/dev splits — no subset filtering.
 
 Usage
 -----
-    python baselines/train_text.py --subtask 1a \
+    python baselines/train_text.py --subtask a1 \
         --model aubmindlab/bert-base-arabertv02 \
         --data-dir data --target dev_test \
-        --out predictions/text_1a.tsv --run-id arabert_text
+        --out predictions/text_a1.tsv --run-id arabert_text
 
-    python baselines/train_text.py --subtask 1b \
+    python baselines/train_text.py --subtask a2 \
         --model UBC-NLP/MARBERTv2 \
         --data-dir data --target dev_test \
-        --out predictions/text_1b.jsonl --run-id marbert_text
-
-    python baselines/train_text.py --subtask 1c \
-        --model aubmindlab/bert-base-arabertv02 \
-        --data-dir data --target dev_test \
-        --out predictions/text_1c.jsonl --run-id arabert_text
+        --out predictions/text_a2.jsonl --run-id marbert_text
 """
 from __future__ import annotations
 
@@ -58,15 +52,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from io_utils import (  # noqa: E402
     read_jsonl,
     write_multilabel_jsonl,
-    write_subtask_1a_tsv,
+    write_subtask_a1_tsv,
 )
-from labels import (  # noqa: E402
-    BINARY_LABELS,
-    HATEFUL_SUBTYPES,
-    NONHATEFUL_SUBTYPES,
-    TaskSpec,
-    get_task,
-)
+from labels import TaskSpec, get_task  # noqa: E402
 
 log = logging.getLogger("train_text")
 
@@ -74,12 +62,6 @@ log = logging.getLogger("train_text")
 # --------------------------------------------------------------------------
 # data
 # --------------------------------------------------------------------------
-def filter_records(records: list[dict], spec: TaskSpec) -> list[dict]:
-    if spec.filter_binary is None:
-        return records
-    return [r for r in records if r.get("label") == spec.filter_binary]
-
-
 class TextDataset(Dataset):
     def __init__(self, records: list[dict], tokenizer, spec: TaskSpec, max_len: int):
         self.records = records
@@ -178,14 +160,14 @@ def set_seed(seed: int) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--subtask", required=True, choices=["1a", "1b", "1c"])
+    ap.add_argument("--subtask", required=True, choices=["a1", "a2", "A1", "A2"])
     ap.add_argument("--model", required=True, help="HF text classification model id")
     ap.add_argument("--data-dir", default="data", type=Path,
                     help="directory containing splits/{train,dev,...}.jsonl")
     ap.add_argument("--target", default="dev_test",
                     help="which split under data/splits/ to predict on")
     ap.add_argument("--out", required=True, type=Path, help="output predictions file")
-    ap.add_argument("--run-id", default="text_baseline", help="run identifier (Subtask 1A)")
+    ap.add_argument("--run-id", default="text_baseline", help="run identifier (Subtask A1)")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--epochs", type=float, default=3.0)
     ap.add_argument("--batch-size", type=int, default=32)
@@ -211,14 +193,9 @@ def main() -> int:
     train_records = read_jsonl(splits_dir / "train.jsonl")
     dev_records = read_jsonl(splits_dir / "dev.jsonl")
     target_records = read_jsonl(splits_dir / f"{args.target}.jsonl")
-
-    train_records_f = filter_records(train_records, spec)
-    dev_records_f = filter_records(dev_records, spec)
     log.info(
-        "records: train=%d (filtered=%d)  dev=%d (filtered=%d)  target=%d",
-        len(train_records), len(train_records_f),
-        len(dev_records), len(dev_records_f),
-        len(target_records),
+        "records: train=%d  dev=%d  target=%d",
+        len(train_records), len(dev_records), len(target_records),
     )
 
     tokenizer = AutoTokenizer.from_pretrained(args.model)
@@ -231,8 +208,8 @@ def main() -> int:
         ignore_mismatched_sizes=True,
     )
 
-    train_ds = TextDataset(train_records_f, tokenizer, spec, args.max_seq_length)
-    dev_ds = TextDataset(dev_records_f, tokenizer, spec, args.max_seq_length)
+    train_ds = TextDataset(train_records, tokenizer, spec, args.max_seq_length)
+    dev_ds = TextDataset(dev_records, tokenizer, spec, args.max_seq_length)
     target_ds = TextDataset(target_records, tokenizer, spec, args.max_seq_length)
 
     training_args = TrainingArguments(
@@ -261,7 +238,7 @@ def main() -> int:
     )
 
     if spec.is_multilabel:
-        pos_w = None if args.no_pos_weight else compute_pos_weight(train_records_f, spec)
+        pos_w = None if args.no_pos_weight else compute_pos_weight(train_records, spec)
         trainer = MultiLabelTrainer(
             model=model, args=training_args,
             train_dataset=train_ds, eval_dataset=dev_ds,
@@ -292,7 +269,7 @@ def main() -> int:
     else:
         pred_ids = np.argmax(logits, axis=1)
         rows = [(r["id"], spec.id2label[int(p)]) for r, p in zip(target_records, pred_ids)]
-        write_subtask_1a_tsv(rows, args.out, run_id=args.run_id)
+        write_subtask_a1_tsv(rows, args.out, run_id=args.run_id)
 
     log.info("wrote predictions -> %s", args.out)
     return 0

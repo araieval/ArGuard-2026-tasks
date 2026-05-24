@@ -1,5 +1,5 @@
 """
-Image-only baseline for ArGuard Task 1 (all three subtasks).
+Image-only baseline for ArGuard 2026 Task 1 / Track A (both subtasks).
 
 Reads JSONL splits produced by ``data/download_data.py``. Images live in
 ``data/img/<id>``; the relative ``image_path`` field of each record is
@@ -7,15 +7,15 @@ resolved against the ``--data-dir`` argument.
 
 Usage
 -----
-    python baselines/train_image.py --subtask 1a \
+    python baselines/train_image.py --subtask a1 \
         --model google/vit-base-patch16-224 \
         --data-dir data --target dev_test \
-        --out predictions/image_1a.tsv --run-id vit_image
+        --out predictions/image_a1.tsv --run-id vit_image
 
-    python baselines/train_image.py --subtask 1b \
+    python baselines/train_image.py --subtask a2 \
         --model microsoft/beit-base-patch16-224 \
         --data-dir data --target dev_test \
-        --out predictions/image_1b.jsonl --run-id beit_image
+        --out predictions/image_a2.jsonl --run-id beit_image
 """
 from __future__ import annotations
 
@@ -42,17 +42,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from io_utils import (  # noqa: E402
     read_jsonl,
     write_multilabel_jsonl,
-    write_subtask_1a_tsv,
+    write_subtask_a1_tsv,
 )
 from labels import TaskSpec, get_task  # noqa: E402
 
 log = logging.getLogger("train_image")
-
-
-def filter_records(records: list[dict], spec: TaskSpec) -> list[dict]:
-    if spec.filter_binary is None:
-        return records
-    return [r for r in records if r.get("label") == spec.filter_binary]
 
 
 def resolve_image(record: dict, data_dir: Path) -> Path:
@@ -145,7 +139,7 @@ def set_seed(seed: int) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--subtask", required=True, choices=["1a", "1b", "1c"])
+    ap.add_argument("--subtask", required=True, choices=["a1", "a2", "A1", "A2"])
     ap.add_argument("--model", required=True, help="HF image classification model id")
     ap.add_argument("--data-dir", default="data", type=Path)
     ap.add_argument("--target", default="dev_test")
@@ -173,14 +167,9 @@ def main() -> int:
     train_records = read_jsonl(splits_dir / "train.jsonl")
     dev_records = read_jsonl(splits_dir / "dev.jsonl")
     target_records = read_jsonl(splits_dir / f"{args.target}.jsonl")
-
-    train_records_f = filter_records(train_records, spec)
-    dev_records_f = filter_records(dev_records, spec)
     log.info(
-        "records: train=%d (filtered=%d)  dev=%d (filtered=%d)  target=%d",
-        len(train_records), len(train_records_f),
-        len(dev_records), len(dev_records_f),
-        len(target_records),
+        "records: train=%d  dev=%d  target=%d",
+        len(train_records), len(dev_records), len(target_records),
     )
 
     processor = AutoImageProcessor.from_pretrained(args.model)
@@ -197,8 +186,8 @@ def main() -> int:
             if not name.startswith("classifier"):
                 p.requires_grad = False
 
-    train_ds = ImageDataset(train_records_f, processor, spec, args.data_dir)
-    dev_ds = ImageDataset(dev_records_f, processor, spec, args.data_dir)
+    train_ds = ImageDataset(train_records, processor, spec, args.data_dir)
+    dev_ds = ImageDataset(dev_records, processor, spec, args.data_dir)
     target_ds = ImageDataset(target_records, processor, spec, args.data_dir)
 
     training_args = TrainingArguments(
@@ -227,7 +216,7 @@ def main() -> int:
     )
 
     if spec.is_multilabel:
-        pos_w = None if args.no_pos_weight else compute_pos_weight(train_records_f, spec)
+        pos_w = None if args.no_pos_weight else compute_pos_weight(train_records, spec)
         trainer = MultiLabelTrainer(
             model=model, args=training_args,
             train_dataset=train_ds, eval_dataset=dev_ds,
@@ -257,7 +246,7 @@ def main() -> int:
     else:
         pred_ids = np.argmax(logits, axis=1)
         rows = [(r["id"], spec.id2label[int(p)]) for r, p in zip(target_records, pred_ids)]
-        write_subtask_1a_tsv(rows, args.out, run_id=args.run_id)
+        write_subtask_a1_tsv(rows, args.out, run_id=args.run_id)
 
     log.info("wrote predictions -> %s", args.out)
     return 0

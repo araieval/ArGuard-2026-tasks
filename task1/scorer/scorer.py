@@ -1,5 +1,5 @@
 """
-Official scorer for ArGuard Task 1.
+Official scorer for ArGuard 2026 Task 1 / Track A.
 
 The scorer:
 
@@ -10,35 +10,35 @@ The scorer:
 3. Writes a ``metrics.json`` next to the submission file (unless
    ``--out`` is provided) and prints a human-readable summary.
 
-For Subtasks 1B and 1C, the scorer **filters the gold and the
-predictions to the gold-positive subset** for the binary parent label.
-That is:
+Both subtasks score predictions against the full set of gold IDs.
 
-- Subtask 1B is scored on memes whose **gold** binary label is
-  ``Hateful``. Predictions for non-hateful memes are ignored, missing
-  predictions for hateful memes are treated as the empty label set.
-- Subtask 1C is the same for ``Not Hateful``.
+- **Subtask A1** — single-label binary classification. Predictions are
+  matched by id; ID sets must match.
+- **Subtask A2** — multi-label fine-grained categorisation over the
+  unified hateful + non-hateful taxonomy. Predictions are matched by id;
+  any label in a prediction that is not in the active A2 vocabulary
+  (i.e. zero-support taxonomy labels) is ignored.
 
-For local debugging, the gold for 1A can be a TSV (same format as a
+For local debugging, the gold for A1 can be a TSV (same format as a
 submission file) or a JSONL with ``{"id":..., "label":...}``.
-The gold for 1B/1C can be a JSONL with ``{"id":..., "labels":[...]}`` —
+The gold for A2 can be a JSONL with ``{"id":..., "labels":[...]}`` —
 i.e. the same JSONL format as a submission — or the dataset's split
 JSONL with ``{"id":..., "label":..., "fine_grained_label":[...]}``
 (produced by ``data/download_data.py``).
 
 Usage
 -----
-    # Subtask 1A
-    python scorer/scorer.py --subtask 1a --gold gold_1a.tsv --pred preds_1a.tsv
+    # Subtask A1
+    python scorer/scorer.py --subtask a1 --gold gold_a1.tsv --pred preds_a1.tsv
 
-    # Subtask 1B (gold can be the full dataset jsonl)
-    python scorer/scorer.py --subtask 1b \
-        --gold data/splits/dev.jsonl --pred preds_1b.jsonl
+    # Subtask A2 (gold can be the full dataset jsonl)
+    python scorer/scorer.py --subtask a2 \
+        --gold data/splits/dev.jsonl --pred preds_a2.jsonl
 
-    # Subtask 1C, write metrics to a custom path
-    python scorer/scorer.py --subtask 1c \
-        --gold data/splits/dev.jsonl --pred preds_1c.jsonl \
-        --out reports/dev_1c.json
+    # Subtask A2, write metrics to a custom path
+    python scorer/scorer.py --subtask a2 \
+        --gold data/splits/dev.jsonl --pred preds_a2.jsonl \
+        --out reports/dev_a2.json
 """
 from __future__ import annotations
 
@@ -57,15 +57,13 @@ sys.path.insert(0, str(ROOT))
 from baselines.io_utils import (  # noqa: E402
     read_jsonl,
     read_multilabel_jsonl,
-    read_subtask_1a_tsv,
+    read_subtask_a1_tsv,
 )
 from baselines.labels import (  # noqa: E402
     BINARY_LABEL2ID,
     BINARY_LABELS,
-    HATEFUL_LABEL2ID,
-    HATEFUL_SUBTYPES,
-    NONHATEFUL_LABEL2ID,
-    NONHATEFUL_SUBTYPES,
+    FINE_GRAINED_LABEL2ID,
+    FINE_GRAINED_LABELS,
     resolve_subtask,
 )
 from baselines.metrics import (  # noqa: E402
@@ -74,8 +72,8 @@ from baselines.metrics import (  # noqa: E402
 )
 from format_checker.format_checker import (  # noqa: E402
     FormatError,
-    check_multilabel,
-    check_subtask_1a,
+    check_subtask_a1,
+    check_subtask_a2,
 )
 
 log = logging.getLogger("scorer")
@@ -85,10 +83,10 @@ log = logging.getLogger("scorer")
 # Gold readers — accept either the official submission shape OR the dataset
 # JSONL produced by data/download_data.py.
 # --------------------------------------------------------------------------
-def read_subtask_1a_gold(path: Path) -> dict[str, str]:
+def read_subtask_a1_gold(path: Path) -> dict[str, str]:
     """Returns mapping id -> binary label."""
     if path.suffix.lower() == ".tsv":
-        rows = read_subtask_1a_tsv(path)
+        rows = read_subtask_a1_tsv(path)
         return {r["id"]: r["label"] for r in rows}
     out: dict[str, str] = {}
     for r in read_jsonl(path):
@@ -123,20 +121,12 @@ def read_finegrained_gold(path: Path, key: str = "fine_grained_label") -> dict[s
     return out
 
 
-def read_binary_field_gold(path: Path) -> dict[str, str]:
-    """Read the binary 'label' field from a dataset JSONL (no TSV path)."""
-    out: dict[str, str] = {}
-    for r in read_jsonl(path):
-        out[str(r["id"])] = r.get("label")
-    return out
-
-
 # --------------------------------------------------------------------------
-# Subtask 1A
+# Subtask A1
 # --------------------------------------------------------------------------
-def score_subtask_1a(pred_path: Path, gold_path: Path) -> dict:
-    pred_rows = read_subtask_1a_tsv(pred_path)
-    gold_map = read_subtask_1a_gold(gold_path)
+def score_subtask_a1(pred_path: Path, gold_path: Path) -> dict:
+    pred_rows = read_subtask_a1_tsv(pred_path)
+    gold_map = read_subtask_a1_gold(gold_path)
 
     pred_ids = {r["id"] for r in pred_rows}
     gold_ids = set(gold_map)
@@ -157,7 +147,7 @@ def score_subtask_1a(pred_path: Path, gold_path: Path) -> dict:
 
 
 # --------------------------------------------------------------------------
-# Subtasks 1B / 1C
+# Subtask A2
 # --------------------------------------------------------------------------
 def _encode_multilabel(labels: list[str], label2id: dict[str, int], K: int) -> np.ndarray:
     v = np.zeros(K, dtype=int)
@@ -167,51 +157,35 @@ def _encode_multilabel(labels: list[str], label2id: dict[str, int], K: int) -> n
     return v
 
 
-def score_finegrained(
-    pred_path: Path,
-    gold_path: Path,
-    subtask: str,
-) -> dict:
-    if subtask == "subtask_1b":
-        binary_filter = "Hateful"
-        label2id = dict(HATEFUL_LABEL2ID)
-        classes = list(HATEFUL_SUBTYPES)
-    elif subtask == "subtask_1c":
-        binary_filter = "Not Hateful"
-        label2id = dict(NONHATEFUL_LABEL2ID)
-        classes = list(NONHATEFUL_SUBTYPES)
-    else:  # pragma: no cover - guarded by caller
-        raise ValueError(f"score_finegrained: unsupported subtask {subtask!r}")
+def score_subtask_a2(pred_path: Path, gold_path: Path) -> dict:
+    label2id = dict(FINE_GRAINED_LABEL2ID)
+    classes = list(FINE_GRAINED_LABELS)
 
     pred_map = {r["id"]: r["labels"] for r in read_multilabel_jsonl(pred_path)}
     gold_fg = read_finegrained_gold(gold_path)
-    gold_binary = read_binary_field_gold(gold_path)
-    if not gold_binary:
-        raise ValueError(
-            f"{gold_path}: cannot determine binary labels. The gold file must "
-            "be a dataset JSONL with a 'label' field (use the file produced "
-            "by data/download_data.py)."
-        )
 
-    # Restrict to the gold-positive subset for this subtask
-    eval_ids = sorted(rid for rid, b in gold_binary.items() if b == binary_filter)
-    if not eval_ids:
+    pred_ids = set(pred_map)
+    gold_ids = set(gold_fg)
+    if pred_ids != gold_ids:
+        missing = gold_ids - pred_ids
+        extra = pred_ids - gold_ids
         raise ValueError(
-            f"{gold_path}: no records with binary label {binary_filter!r}"
+            f"ID mismatch: missing={len(missing)} (first 5: {sorted(missing)[:5]}); "
+            f"extra={len(extra)} (first 5: {sorted(extra)[:5]})"
         )
 
     K = len(classes)
+    eval_ids = sorted(gold_ids)
     y_true = np.stack(
-        [_encode_multilabel(gold_fg.get(rid, []), label2id, K) for rid in eval_ids]
+        [_encode_multilabel(gold_fg[rid], label2id, K) for rid in eval_ids]
     )
     y_pred = np.stack(
-        [_encode_multilabel(pred_map.get(rid, []), label2id, K) for rid in eval_ids]
+        [_encode_multilabel(pred_map[rid], label2id, K) for rid in eval_ids]
     )
 
     extra = {
         "n_records_evaluated": len(eval_ids),
-        "n_records_with_prediction": int(sum(rid in pred_map for rid in eval_ids)),
-        "n_records_missing_prediction": int(sum(rid not in pred_map for rid in eval_ids)),
+        "active_vocab": classes,
     }
     m = compute_multilabel_metrics(y_true, y_pred, class_names=classes)
     return {**m, **extra}
@@ -235,7 +209,7 @@ def _print_summary(subtask: str, metrics: dict) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--subtask", required=True,
-                    choices=["1a", "1b", "1c", "subtask_1a", "subtask_1b", "subtask_1c"])
+                    choices=["a1", "a2", "A1", "A2", "subtask_a1", "subtask_a2"])
     ap.add_argument("--predictions", "--pred", required=True, type=Path)
     ap.add_argument("--gold", required=True, type=Path)
     ap.add_argument("--out", default=None, type=Path,
@@ -259,19 +233,19 @@ def main() -> int:
 
     if not args.skip_format_check:
         try:
-            if subtask == "subtask_1a":
-                check_subtask_1a(pred_path)
+            if subtask == "subtask_a1":
+                check_subtask_a1(pred_path)
             else:
-                check_multilabel(pred_path, subtask)
+                check_subtask_a2(pred_path)
         except FormatError as e:
             sys.stderr.write(f"FORMAT ERROR: {e}\n")
             return 1
 
     try:
-        if subtask == "subtask_1a":
-            metrics = score_subtask_1a(pred_path, gold_path)
+        if subtask == "subtask_a1":
+            metrics = score_subtask_a1(pred_path, gold_path)
         else:
-            metrics = score_finegrained(pred_path, gold_path, subtask)
+            metrics = score_subtask_a2(pred_path, gold_path)
     except ValueError as e:
         sys.stderr.write(f"SCORING ERROR: {e}\n")
         return 1

@@ -1,5 +1,6 @@
 """
-Lightweight multimodal baseline for ArGuard Task 1 (all three subtasks).
+Lightweight multimodal baseline for ArGuard 2026 Task 1 / Track A
+(both subtasks).
 
 Architecture (late fusion): a text encoder (any HF BERT-family model)
 produces a sentence embedding; an image encoder (any HF ViT-family
@@ -14,11 +15,11 @@ project README.
 
 Usage
 -----
-    python baselines/train_multimodal.py --subtask 1a \
+    python baselines/train_multimodal.py --subtask a1 \
         --text-model aubmindlab/bert-base-arabertv02 \
         --image-model google/vit-base-patch16-224 \
         --data-dir data --target dev_test \
-        --out predictions/mm_1a.tsv --run-id arabert_vit
+        --out predictions/mm_a1.tsv --run-id arabert_vit
 """
 from __future__ import annotations
 
@@ -45,7 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from io_utils import (  # noqa: E402
     read_jsonl,
     write_multilabel_jsonl,
-    write_subtask_1a_tsv,
+    write_subtask_a1_tsv,
 )
 from labels import TaskSpec, get_task  # noqa: E402
 
@@ -55,12 +56,6 @@ log = logging.getLogger("train_multimodal")
 # --------------------------------------------------------------------------
 # data
 # --------------------------------------------------------------------------
-def filter_records(records: list[dict], spec: TaskSpec) -> list[dict]:
-    if spec.filter_binary is None:
-        return records
-    return [r for r in records if r.get("label") == spec.filter_binary]
-
-
 def resolve_image(record: dict, data_dir: Path) -> Path:
     rel = record.get("image_path") or ""
     p = Path(rel)
@@ -156,7 +151,6 @@ class LateFusionClassifier(nn.Module):
 
     def _text_pool(self, input_ids, attention_mask):
         out = self.text_encoder(input_ids=input_ids, attention_mask=attention_mask)
-        # Prefer pooler_output when present (BERT/RoBERTa); fall back to CLS token.
         pooled = getattr(out, "pooler_output", None)
         if pooled is None:
             pooled = out.last_hidden_state[:, 0, :]
@@ -210,7 +204,6 @@ def run_epoch(model, loader, optimizer, scheduler, loss_fn, device, train: bool)
                 pixel_values=batch["pixel_values"],
             )
             if isinstance(loss_fn, nn.CrossEntropyLoss):
-                # ignore -100 labels (unlabelled records, never in train/dev)
                 loss = loss_fn(logits, labels.long())
             else:
                 loss = loss_fn(logits, labels.float())
@@ -247,7 +240,7 @@ def predict(model, loader, device, is_multilabel: bool, threshold: float):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--subtask", required=True, choices=["1a", "1b", "1c"])
+    ap.add_argument("--subtask", required=True, choices=["a1", "a2", "A1", "A2"])
     ap.add_argument("--text-model", required=True)
     ap.add_argument("--image-model", required=True)
     ap.add_argument("--data-dir", default="data", type=Path)
@@ -279,14 +272,9 @@ def main() -> int:
     train_records = read_jsonl(splits_dir / "train.jsonl")
     dev_records = read_jsonl(splits_dir / "dev.jsonl")
     target_records = read_jsonl(splits_dir / f"{args.target}.jsonl")
-
-    train_records_f = filter_records(train_records, spec)
-    dev_records_f = filter_records(dev_records, spec)
     log.info(
-        "records: train=%d (filtered=%d)  dev=%d (filtered=%d)  target=%d",
-        len(train_records), len(train_records_f),
-        len(dev_records), len(dev_records_f),
-        len(target_records),
+        "records: train=%d  dev=%d  target=%d",
+        len(train_records), len(dev_records), len(target_records),
     )
 
     tokenizer = AutoTokenizer.from_pretrained(args.text_model)
@@ -300,10 +288,10 @@ def main() -> int:
     ).to(device)
 
     train_ds = MultimodalDataset(
-        train_records_f, tokenizer, processor, spec, args.data_dir, args.max_seq_length,
+        train_records, tokenizer, processor, spec, args.data_dir, args.max_seq_length,
     )
     dev_ds = MultimodalDataset(
-        dev_records_f, tokenizer, processor, spec, args.data_dir, args.max_seq_length,
+        dev_records, tokenizer, processor, spec, args.data_dir, args.max_seq_length,
     )
     target_ds = MultimodalDataset(
         target_records, tokenizer, processor, spec, args.data_dir, args.max_seq_length,
@@ -330,7 +318,7 @@ def main() -> int:
     )
 
     if spec.is_multilabel:
-        pos_w = None if args.no_pos_weight else compute_pos_weight(train_records_f, spec).to(device)
+        pos_w = None if args.no_pos_weight else compute_pos_weight(train_records, spec).to(device)
         loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_w) if pos_w is not None else nn.BCEWithLogitsLoss()
     else:
         loss_fn = nn.CrossEntropyLoss(ignore_index=-100)
@@ -357,7 +345,7 @@ def main() -> int:
         write_multilabel_jsonl(rows, args.out)
     else:
         rows = [(r["id"], spec.id2label[int(p)]) for r, p in zip(target_records, preds)]
-        write_subtask_1a_tsv(rows, args.out, run_id=args.run_id)
+        write_subtask_a1_tsv(rows, args.out, run_id=args.run_id)
 
     log.info("wrote predictions -> %s", args.out)
     return 0

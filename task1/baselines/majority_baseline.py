@@ -1,30 +1,24 @@
 """
-Majority-class baseline for all three Task-1 subtasks.
+Majority-class baseline for ArGuard 2026 Task 1 / Track A.
 
-Subtask 1A : predict the majority binary class from the training set
+Subtask A1 : predict the majority binary class from the training set
              (= ``Not Hateful`` on the released data).
-Subtask 1B : predict the single most frequent hateful sub-type from the
-             training set on every hateful meme (multi-label output with
-             one entry).
-Subtask 1C : predict the single most frequent non-hateful sub-type from
-             the training set on every non-hateful meme.
+Subtask A2 : predict the single most frequent fine-grained sub-type
+             from the training set on every meme (multi-label output
+             with one entry).
 
 Usage
 -----
     python baselines/majority_baseline.py \
-        --subtask 1a \
+        --subtask a1 \
         --train data/splits/train.jsonl \
         --target data/splits/dev_test.jsonl \
-        --out predictions/majority_1a.tsv \
+        --out predictions/majority_a1.tsv \
         --run-id majority
 
-    python baselines/majority_baseline.py --subtask 1b \
+    python baselines/majority_baseline.py --subtask a2 \
         --train data/splits/train.jsonl --target data/splits/dev_test.jsonl \
-        --out predictions/majority_1b.jsonl --run-id majority
-
-    python baselines/majority_baseline.py --subtask 1c \
-        --train data/splits/train.jsonl --target data/splits/dev_test.jsonl \
-        --out predictions/majority_1c.jsonl --run-id majority
+        --out predictions/majority_a2.jsonl --run-id majority
 """
 from __future__ import annotations
 
@@ -38,12 +32,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from io_utils import (  # noqa: E402
     read_jsonl,
     write_multilabel_jsonl,
-    write_subtask_1a_tsv,
+    write_subtask_a1_tsv,
 )
 from labels import (  # noqa: E402
     BINARY_LABELS,
-    HATEFUL_SUBTYPES,
-    NONHATEFUL_SUBTYPES,
+    FINE_GRAINED_LABELS,
     resolve_subtask,
 )
 
@@ -70,12 +63,12 @@ def _majority_finegrained(train_records: list[dict], allowed: set[str]) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--subtask", required=True, choices=["1a", "1b", "1c"])
+    ap.add_argument("--subtask", required=True, choices=["a1", "a2", "A1", "A2"])
     ap.add_argument("--train", required=True, type=Path, help="training jsonl")
     ap.add_argument("--target", required=True, type=Path,
                     help="jsonl to predict on (e.g., dev.jsonl or dev_test.jsonl)")
     ap.add_argument("--out", required=True, type=Path, help="output predictions file")
-    ap.add_argument("--run-id", default="majority", help="run identifier (Subtask 1A only)")
+    ap.add_argument("--run-id", default="majority", help="run identifier (Subtask A1 only)")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
@@ -84,17 +77,13 @@ def main() -> int:
     target = read_jsonl(args.target)
     log.info("loaded train=%d  target=%d", len(train), len(target))
 
-    if subtask == "subtask_1a":
+    if subtask == "subtask_a1":
         cls = _majority_binary(train)
         log.info("majority class = %r", cls)
-        write_subtask_1a_tsv(((r["id"], cls) for r in target), args.out, run_id=args.run_id)
-    elif subtask == "subtask_1b":
-        cls = _majority_finegrained(train, set(HATEFUL_SUBTYPES))
-        log.info("majority hateful subtype = %r", cls)
-        write_multilabel_jsonl(((r["id"], [cls]) for r in target), args.out)
-    else:  # subtask_1c
-        cls = _majority_finegrained(train, set(NONHATEFUL_SUBTYPES))
-        log.info("majority non-hateful subtype = %r", cls)
+        write_subtask_a1_tsv(((r["id"], cls) for r in target), args.out, run_id=args.run_id)
+    else:  # subtask_a2
+        cls = _majority_finegrained(train, set(FINE_GRAINED_LABELS))
+        log.info("majority fine-grained subtype = %r", cls)
         write_multilabel_jsonl(((r["id"], [cls]) for r in target), args.out)
 
     print(f"Wrote {args.out}")

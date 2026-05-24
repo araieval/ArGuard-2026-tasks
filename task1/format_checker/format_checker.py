@@ -1,33 +1,31 @@
 """
-Submission format checker for ArGuard Task 1.
+Submission format checker for ArGuard 2026 Task 1 / Track A.
 
 Usage
 -----
-    # Subtask 1A — TSV
+    # Subtask A1 — TSV
     python format_checker/format_checker.py \
-        --subtask 1a --predictions preds_1a.tsv [--gold gold_1a.tsv]
+        --subtask a1 --predictions preds_a1.tsv [--gold gold_a1.tsv]
 
-    # Subtasks 1B / 1C — JSONL
+    # Subtask A2 — JSONL
     python format_checker/format_checker.py \
-        --subtask 1b --predictions preds_1b.jsonl [--gold gold_1b.jsonl]
-    python format_checker/format_checker.py \
-        --subtask 1c --predictions preds_1c.jsonl [--gold gold_1c.jsonl]
+        --subtask a2 --predictions preds_a2.jsonl [--gold gold_a2.jsonl]
 
 What is checked
 ---------------
-**Subtask 1A** (TSV with header ``id<TAB>label<TAB>run_id``):
+**Subtask A1** (TSV with header ``id<TAB>label<TAB>run_id``):
 - File parses; the header is exactly ``id\\tlabel\\trun_id``.
 - Each row has 3 columns.
 - ``label`` ∈ {"Hateful", "Not Hateful"}.
 - ``run_id`` is a single non-empty string and the same on every row.
 - IDs are unique. (If ``--gold`` is given: prediction IDs == gold IDs.)
 
-**Subtasks 1B / 1C** (JSONL with ``{"id": str, "labels": [str, ...]}``):
+**Subtask A2** (JSONL with ``{"id": str, "labels": [str, ...]}``):
 - Each line is valid JSON with required keys ``id`` and ``labels``.
 - ``id`` is a non-empty string; IDs are unique.
-- ``labels`` is a list of strings drawn from the subtask vocabulary
-  (Subtask 1B: hateful sub-types; Subtask 1C: non-hateful sub-types).
-  An empty list is allowed.
+- ``labels`` is a list of strings drawn from the unified A2 taxonomy
+  (hateful sub-types + non-hateful sub-types + shared ``Other``).
+  An empty list is allowed (meme has no fine-grained category).
 - (If ``--gold`` is given: prediction IDs == gold IDs.)
 
 The checker exits with code 0 if all checks pass, and code 1 otherwise.
@@ -45,13 +43,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from baselines.io_utils import (  # noqa: E402
     read_multilabel_jsonl,
-    read_subtask_1a_tsv,
+    read_subtask_a1_tsv,
 )
 from baselines.labels import (  # noqa: E402
     BINARY_LABELS,
-    HATEFUL_SUBTYPES,
-    HATEFUL_SUBTYPES_TAXONOMY,
-    NONHATEFUL_SUBTYPES,
+    FINE_GRAINED_LABELS,
+    FINE_GRAINED_TAXONOMY,
     resolve_subtask,
 )
 
@@ -63,11 +60,11 @@ class FormatError(Exception):
 
 
 # --------------------------------------------------------------------------
-# Subtask 1A
+# Subtask A1
 # --------------------------------------------------------------------------
-def check_subtask_1a(pred_path: Path, gold_path: Path | None = None) -> None:
+def check_subtask_a1(pred_path: Path, gold_path: Path | None = None) -> None:
     try:
-        rows = read_subtask_1a_tsv(pred_path)
+        rows = read_subtask_a1_tsv(pred_path)
     except ValueError as e:
         raise FormatError(str(e))
     if not rows:
@@ -104,35 +101,28 @@ def check_subtask_1a(pred_path: Path, gold_path: Path | None = None) -> None:
         raise FormatError(f"{pred_path}: at least one row has an empty id")
 
     if gold_path is not None:
-        gold_ids = {r["id"] for r in read_subtask_1a_tsv(gold_path)}
+        gold_ids = {r["id"] for r in read_subtask_a1_tsv(gold_path)}
         _check_id_match(set(ids), gold_ids, pred_path, gold_path)
 
     log.info(
-        "[subtask_1a] OK: %d predictions, run_id=%r, labels in %s",
+        "[subtask_a1] OK: %d predictions, run_id=%r, labels in %s",
         len(rows), run_id, sorted(valid),
     )
 
 
 # --------------------------------------------------------------------------
-# Subtask 1B / 1C
+# Subtask A2
 # --------------------------------------------------------------------------
-def check_multilabel(
+def check_subtask_a2(
     pred_path: Path,
-    subtask: str,
     gold_path: Path | None = None,
 ) -> None:
-    if subtask == "subtask_1b":
-        valid = set(HATEFUL_SUBTYPES_TAXONOMY)  # accept full 13-class taxonomy
-        active = set(HATEFUL_SUBTYPES)
-    elif subtask == "subtask_1c":
-        valid = set(NONHATEFUL_SUBTYPES)
-        active = valid
-    else:  # pragma: no cover - guarded by caller
-        raise ValueError(f"check_multilabel: unsupported subtask {subtask!r}")
+    valid = set(FINE_GRAINED_TAXONOMY)   # accept full taxonomy (incl. zero-support)
+    active = set(FINE_GRAINED_LABELS)    # active labels actually scored
 
     try:
         rows = read_multilabel_jsonl(pred_path)
-    except (ValueError, ValueError) as e:
+    except ValueError as e:
         raise FormatError(str(e))
     if not rows:
         raise FormatError(f"{pred_path}: no prediction rows")
@@ -156,7 +146,6 @@ def check_multilabel(
         bad_lbls = [l for l in r["labels"] if l not in valid]
         if bad_lbls:
             bad.append((r["id"], bad_lbls))
-        # warn on labels that are in taxonomy but have zero training support
         for l in r["labels"]:
             if l in valid and l not in active:
                 inactive_used[l] += 1
@@ -168,9 +157,9 @@ def check_multilabel(
         )
     if inactive_used:
         log.warning(
-            "[%s] %d records use zero-support taxonomy labels: %s "
-            "(allowed by checker, but not present in training data)",
-            subtask, sum(inactive_used.values()), dict(inactive_used),
+            "[subtask_a2] %d records use zero-support taxonomy labels: %s "
+            "(accepted by the checker but ignored by the scorer)",
+            sum(inactive_used.values()), dict(inactive_used),
         )
 
     if gold_path is not None:
@@ -178,8 +167,8 @@ def check_multilabel(
         _check_id_match(set(ids), gold_ids, pred_path, gold_path)
 
     log.info(
-        "[%s] OK: %d predictions, label vocab size=%d",
-        subtask, len(rows), len(valid),
+        "[subtask_a2] OK: %d predictions, active vocab=%d, full taxonomy=%d",
+        len(rows), len(active), len(valid),
     )
 
 
@@ -211,7 +200,8 @@ def _check_id_match(
 # --------------------------------------------------------------------------
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--subtask", required=True, choices=["1a", "1b", "1c", "subtask_1a", "subtask_1b", "subtask_1c"])
+    ap.add_argument("--subtask", required=True,
+                    choices=["a1", "a2", "A1", "A2", "subtask_a1", "subtask_a2"])
     ap.add_argument("--predictions", "--pred", required=True, type=Path,
                     help="path to the submission file")
     ap.add_argument("--gold", default=None, type=Path,
@@ -230,10 +220,10 @@ def main() -> int:
         return 2
 
     try:
-        if subtask == "subtask_1a":
-            check_subtask_1a(pred_path, gold_path)
+        if subtask == "subtask_a1":
+            check_subtask_a1(pred_path, gold_path)
         else:
-            check_multilabel(pred_path, subtask, gold_path)
+            check_subtask_a2(pred_path, gold_path)
     except FormatError as e:
         sys.stderr.write(f"FORMAT ERROR: {e}\n")
         return 1

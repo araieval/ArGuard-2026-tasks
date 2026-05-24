@@ -1,5 +1,5 @@
 """
-Download ArGuard Task 1 data from the Hugging Face Hub.
+Download ArGuard 2026 Task 1 / Track A data from the Hugging Face Hub.
 
 Source repo : https://huggingface.co/datasets/QCRI/ArGuard-Task1
 Default output: ``task1/data/``

@@ -42,18 +42,18 @@ def write_jsonl(records: Iterable[dict], path: str | Path) -> None:
 
 
 # --------------------------------------------------------------------------
-# Subtask-1A TSV (id<TAB>label<TAB>run_id, with header)
+# Subtask-A1 TSV (id<TAB>label<TAB>run_id, with header)
 # --------------------------------------------------------------------------
-SUBTASK_1A_HEADER: tuple[str, ...] = ("id", "label", "run_id")
+SUBTASK_A1_HEADER: tuple[str, ...] = ("id", "label", "run_id")
 
 
-def write_subtask_1a_tsv(
+def write_subtask_a1_tsv(
     predictions: Iterable[tuple[str, str]],
     path: str | Path,
     run_id: str,
 ) -> None:
     """
-    Write a Subtask-1A submission file.
+    Write a Subtask-A1 submission file.
 
     Parameters
     ----------
@@ -65,14 +65,14 @@ def write_subtask_1a_tsv(
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh, delimiter="\t", lineterminator="\n")
-        w.writerow(SUBTASK_1A_HEADER)
+        w.writerow(SUBTASK_A1_HEADER)
         for rid, label in predictions:
             w.writerow([rid, label, run_id])
 
 
-def read_subtask_1a_tsv(path: str | Path) -> list[dict]:
+def read_subtask_a1_tsv(path: str | Path) -> list[dict]:
     """
-    Read a Subtask-1A TSV file. Returns a list of dicts with keys
+    Read a Subtask-A1 TSV file. Returns a list of dicts with keys
     ``id``, ``label``, ``run_id``. Raises ``ValueError`` on a bad header.
     """
     path = Path(path)
@@ -82,10 +82,10 @@ def read_subtask_1a_tsv(path: str | Path) -> list[dict]:
     if not rows:
         raise ValueError(f"empty file: {path}")
     header = tuple(rows[0])
-    if header != SUBTASK_1A_HEADER:
+    if header != SUBTASK_A1_HEADER:
         raise ValueError(
             f"unexpected header in {path}: {header!r}. "
-            f"Expected: {SUBTASK_1A_HEADER!r}"
+            f"Expected: {SUBTASK_A1_HEADER!r}"
         )
     out: list[dict] = []
     for i, row in enumerate(rows[1:], start=2):
@@ -97,7 +97,7 @@ def read_subtask_1a_tsv(path: str | Path) -> list[dict]:
 
 
 # --------------------------------------------------------------------------
-# Subtask 1B / 1C JSONL submissions ({"id":..., "labels":[...]})
+# Subtask A2 JSONL submissions ({"id":..., "labels":[...]})
 # --------------------------------------------------------------------------
 def write_multilabel_jsonl(
     predictions: Iterable[tuple[str, list[str]]],

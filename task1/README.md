@@ -1,6 +1,6 @@
-# Task 1: Multimodal Hateful Meme Detection (ArGuard)
+# Task 1 — Track A: Multimodal Hateful Meme Detection (ArGuard 2026)
 
-Starter kit for **Task 1** of the [ArGuard 2026 shared task][website]:
+Starter kit for **Task 1 / Track A** of the [ArGuard 2026 shared task][website]:
 detecting hateful content in Arabic memes.
 
 [website]: https://araieval.gitlab.io/ArGuard2026/
@@ -22,19 +22,18 @@ __Table of contents:__
 
 ## Subtasks
 
-Given an Arabic meme (image + OCR-extracted text), Task 1 has **three hierarchical subtasks**:
+Given an Arabic meme (image + OCR-extracted text), Track A has **two subtasks**:
 
 | Subtask | Type | Label space | Evaluated on |
 |---|---|---|---|
-| **1A** | Binary, single-label | `Hateful`, `Not Hateful` | all memes |
-| **1B** | Multi-label, fine-grained hateful | 13-class taxonomy<sup>†</sup> | memes with gold binary = `Hateful` |
-| **1C** | Multi-label, fine-grained non-hateful | `Humor`, `Sarcasm`, `Other` | memes with gold binary = `Not Hateful` |
+| **A1** | Binary, single-label | `Hateful`, `Not Hateful` | all memes |
+| **A2** | Multi-label, fine-grained | unified 10-class vocab<sup>†</sup> | all memes |
 
-<sup>†</sup> The full hateful taxonomy is: `Contempt`, `Dehumanization`, `Exclusion`, `Extremism`, `Historical`, `Incitement`, `Inferiority`, `Insults`, `Mocking`, `Other`, `Slurs`, `Stereotyping`, `Threat`. Eight of these (Contempt, Dehumanization, Exclusion, Incitement, Inferiority, Mocking, Other, Slurs) have non-zero training support — the format checker accepts predictions from all thirteen.
+<sup>†</sup> A2 uses one unified label space across both groups: hateful sub-types (`Contempt`, `Dehumanization`, `Exclusion`, `Incitement`, `Inferiority`, `Mocking`, `Slurs`), non-hateful sub-types (`Humor`, `Sarcasm`), plus `Other` (shared between the two groups). The full annotation taxonomy additionally includes 5 hateful classes with zero training support (`Extremism`, `Historical`, `Insults`, `Stereotyping`, `Threat`) — the format checker accepts predictions from these, but they are not scored.
 
-**Official metric (all subtasks): macro-F1.** Accuracy, macro-precision, macro-recall, weighted F1 and per-class F1 are also reported.
+**Official metric (both subtasks): macro-F1.** Accuracy (A1) / subset-accuracy (A2), macro-precision, macro-recall, weighted F1 and per-class F1 are also reported.
 
-For Subtasks 1B and 1C the scorer **filters by the gold binary label**: predictions for memes outside the relevant binary class are ignored, and missing predictions for in-class memes are treated as the empty label set.
+Both subtasks are scored against the **full set of gold IDs** — no subset filtering.
 
 ---
 
@@ -133,36 +132,36 @@ Five baselines are provided. All read the JSONL splits written by `download_data
 
 ```bash
 # 1) Most-frequent-class baseline
-python baselines/majority_baseline.py --subtask 1a \
+python baselines/majority_baseline.py --subtask a1 \
     --train data/splits/train.jsonl --target data/splits/dev_test.jsonl \
-    --out predictions/majority_1a.tsv --run-id majority
+    --out predictions/majority_a1.tsv --run-id majority
 
 # 2) Prior-weighted random baseline
-python baselines/random_baseline.py --subtask 1a \
+python baselines/random_baseline.py --subtask a1 \
     --train data/splits/train.jsonl --target data/splits/dev_test.jsonl \
-    --out predictions/random_1a.tsv --run-id random --seed 42
+    --out predictions/random_a1.tsv --run-id random --seed 42
 
 # 3) Text-only BERT classifier
-python baselines/train_text.py --subtask 1a \
+python baselines/train_text.py --subtask a1 \
     --model aubmindlab/bert-base-arabertv02 \
     --data-dir data --target dev_test \
-    --out predictions/text_1a.tsv --run-id arabert_text
+    --out predictions/text_a1.tsv --run-id arabert_text
 
 # 4) Image-only ViT classifier
-python baselines/train_image.py --subtask 1a \
+python baselines/train_image.py --subtask a1 \
     --model google/vit-base-patch16-224 \
     --data-dir data --target dev_test \
-    --out predictions/image_1a.tsv --run-id vit_image
+    --out predictions/image_a1.tsv --run-id vit_image
 
 # 5) Multimodal late-fusion (text + image, end-to-end fine-tune)
-python baselines/train_multimodal.py --subtask 1a \
+python baselines/train_multimodal.py --subtask a1 \
     --text-model aubmindlab/bert-base-arabertv02 \
     --image-model google/vit-base-patch16-224 \
     --data-dir data --target dev_test \
-    --out predictions/mm_1a.tsv --run-id arabert_vit
+    --out predictions/mm_a1.tsv --run-id arabert_vit
 ```
 
-Swap `--subtask 1a` for `1b` or `1c` (and use a `.jsonl` `--out`) for the fine-grained subtasks. The training scripts automatically filter the train and dev splits to the relevant binary subset for 1B/1C, but they **predict on the full target split** so the resulting submission can be scored directly.
+Swap `--subtask a1` for `a2` (and use a `.jsonl` `--out`) for the fine-grained subtask. The training scripts train on **all** train/dev records for both subtasks — no subset filtering.
 
 For a stronger VLM-based multimodal baseline (Qwen-VL LoRA fine-tune via `ms-swift`), see the research repository — out of scope for this starter kit. See [`baselines/README.md`](baselines/README.md) for hyperparameters and recommended model lists.
 
@@ -173,9 +172,8 @@ For a stronger VLM-based multimodal baseline (Qwen-VL LoRA fine-tune via `ms-swi
 Before submitting, validate the file format:
 
 ```bash
-python format_checker/format_checker.py --subtask 1a --predictions predictions/text_1a.tsv
-python format_checker/format_checker.py --subtask 1b --predictions predictions/text_1b.jsonl
-python format_checker/format_checker.py --subtask 1c --predictions predictions/text_1c.jsonl
+python format_checker/format_checker.py --subtask a1 --predictions predictions/text_a1.tsv
+python format_checker/format_checker.py --subtask a2 --predictions predictions/text_a2.jsonl
 ```
 
 The checker validates header / schema, label vocabulary, ID uniqueness, and (when a `--gold` file is supplied) that the prediction IDs match the gold IDs. See [`format_checker/README.md`](format_checker/README.md).
@@ -185,16 +183,15 @@ The checker validates header / schema, label vocabulary, ID uniqueness, and (whe
 ## Scorer
 
 ```bash
-# Subtask 1A — gold can be the dataset JSONL or a TSV in submission format
-python scorer/scorer.py --subtask 1a \
+# Subtask A1 — gold can be the dataset JSONL or a TSV in submission format
+python scorer/scorer.py --subtask a1 \
     --gold data/splits/dev.jsonl \
-    --predictions predictions/text_1a.tsv
+    --predictions predictions/text_a1.tsv
 
-# Subtask 1B / 1C — gold must be the dataset JSONL (so the scorer knows
-# which records to filter to the relevant binary subset)
-python scorer/scorer.py --subtask 1b \
+# Subtask A2 — gold is the dataset JSONL (or any submission-shape jsonl)
+python scorer/scorer.py --subtask a2 \
     --gold data/splits/dev.jsonl \
-    --predictions predictions/text_1b.jsonl
+    --predictions predictions/text_a2.jsonl
 ```
 
 The scorer prints a summary and writes a `metrics.json` next to the predictions file. See [`scorer/README.md`](scorer/README.md).
@@ -207,7 +204,7 @@ The scorer prints a summary and writes a `metrics.json` next to the predictions 
 
 ### File formats
 
-**Subtask 1A** — TSV with header `id<TAB>label<TAB>run_id`:
+**Subtask A1** — TSV with header `id<TAB>label<TAB>run_id`:
 
 ```
 id	label	run_id
@@ -215,18 +212,12 @@ abc123.jpg	Hateful	my_team_run1
 def456.jpg	Not Hateful	my_team_run1
 ```
 
-**Subtask 1B** — JSONL (multi-label, hateful sub-types):
+**Subtask A2** — JSONL (multi-label, unified fine-grained taxonomy):
 
 ```
 {"id": "abc123.jpg", "labels": ["Mocking", "Incitement"]}
-{"id": "def456.jpg", "labels": []}
-```
-
-**Subtask 1C** — JSONL (multi-label, non-hateful sub-types):
-
-```
-{"id": "abc123.jpg", "labels": ["Humor"]}
-{"id": "def456.jpg", "labels": ["Sarcasm", "Other"]}
+{"id": "def456.jpg", "labels": ["Humor", "Sarcasm"]}
+{"id": "ghi789.jpg", "labels": []}
 ```
 
 Sample files in [`data/sample_submissions/`](data/sample_submissions/).
@@ -254,8 +245,8 @@ Friendly walk-throughs of the scripts above live in [`baselines/notebooks/`](bas
 | Notebook | Topic |
 |---|---|
 | `01_explore_data.ipynb` | load splits, browse memes, plot label distributions |
-| `02_text_baseline.ipynb` | text-only BERT classifier on subtasks 1A/1B/1C |
-| `03_image_baseline.ipynb` | image-only ViT classifier |
+| `02_text_baseline.ipynb` | text-only BERT classifier on Subtask A1 |
+| `03_image_baseline.ipynb` | image-only ViT classifier on Subtask A1 |
 | `04_multimodal_baseline.ipynb` | late-fusion multimodal classifier |
 | `05_simple_baselines.ipynb` | majority + random baselines, format checker, scorer |
 
@@ -277,4 +268,4 @@ The released dataset is distributed under **CC BY-NC 4.0** (non-commercial resea
 ## Citation and contact
 
 - **Website:** https://araieval.gitlab.io/ArGuard2026/
-- **Email:** arguard2026-organizers@googlegroups.co
+- **Email:** arguard2026-organizers@googlegroups.com

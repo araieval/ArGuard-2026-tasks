@@ -1,14 +1,14 @@
-# Task 1 — Baselines
+# Task 1 / Track A — Baselines
 
 Five baselines are provided, in increasing order of strength:
 
 | Script | Family | Subtasks |
 |---|---|---|
-| `majority_baseline.py`       | Trivial (most-frequent-class)   | 1A, 1B, 1C |
-| `random_baseline.py`         | Trivial (prior-weighted random) | 1A, 1B, 1C |
-| `train_text.py`              | Text-only (BERT-family)         | 1A, 1B, 1C |
-| `train_image.py`             | Image-only (ViT / BEiT)         | 1A, 1B, 1C |
-| `train_multimodal.py`        | Late-fusion (text + image)      | 1A, 1B, 1C |
+| `majority_baseline.py`       | Trivial (most-frequent-class)   | A1, A2 |
+| `random_baseline.py`         | Trivial (prior-weighted random) | A1, A2 |
+| `train_text.py`              | Text-only (BERT-family)         | A1, A2 |
+| `train_image.py`             | Image-only (ViT / BEiT)         | A1, A2 |
+| `train_multimodal.py`        | Late-fusion (text + image)      | A1, A2 |
 
 All five read JSONL splits produced by `data/download_data.py` and write
 predictions in the **exact submission format** described in the task README
@@ -21,12 +21,11 @@ scorer.
 
 ## Conventions
 
-### Filtering for 1B and 1C
-- **Subtask 1B** trains and validates on memes with binary label `Hateful`.
-- **Subtask 1C** trains and validates on memes with binary label `Not Hateful`.
-- All scripts **predict on the unfiltered target split** so the resulting
-  submission can be scored directly against the gold-positive subset (the
-  scorer filters by gold binary label).
+### No subset filtering
+Both subtasks train, validate, and predict on the **full** splits — there
+is no train-time filtering by binary class. A2's label space is the
+unified hateful + non-hateful fine-grained taxonomy, and a meme may
+legitimately have zero positive labels under A2.
 
 ### `--target {dev,dev_test,test}`
 Pick which split the trained model writes predictions for. Default is
@@ -78,24 +77,24 @@ ArHate5k research repository.
 # Download data
 python data/download_data.py
 
-# Train text baseline for Subtask 1A
-python baselines/train_text.py --subtask 1a \
+# Train text baseline for Subtask A1
+python baselines/train_text.py --subtask a1 \
     --model aubmindlab/bert-base-arabertv02 \
     --data-dir data --target dev_test \
-    --out predictions/text_1a.tsv --run-id arabert_text
+    --out predictions/text_a1.tsv --run-id arabert_text
 
 # Validate format
-python format_checker/format_checker.py --subtask 1a \
-    --predictions predictions/text_1a.tsv
+python format_checker/format_checker.py --subtask a1 \
+    --predictions predictions/text_a1.tsv
 
 # Local scoring against dev (re-train on dev as target if you want metrics)
-python baselines/train_text.py --subtask 1a \
+python baselines/train_text.py --subtask a1 \
     --model aubmindlab/bert-base-arabertv02 \
     --data-dir data --target dev \
-    --out predictions/text_1a_dev.tsv --run-id arabert_text_dev
-python scorer/scorer.py --subtask 1a \
+    --out predictions/text_a1_dev.tsv --run-id arabert_text_dev
+python scorer/scorer.py --subtask a1 \
     --gold data/splits/dev.jsonl \
-    --predictions predictions/text_1a_dev.tsv
+    --predictions predictions/text_a1_dev.tsv
 ```
 
 ---
@@ -108,13 +107,13 @@ each baseline (data loading, training, evaluation, submission writing).
 | Notebook | Topic |
 |---|---|
 | `01_explore_data.ipynb`        | dataset overview, label distributions, image preview |
-| `02_text_baseline.ipynb`       | text-only BERT classifier walk-through (subtask 1A) |
-| `03_image_baseline.ipynb`      | image-only ViT classifier walk-through (subtask 1A) |
-| `04_multimodal_baseline.ipynb` | late-fusion multimodal classifier (subtask 1A) |
+| `02_text_baseline.ipynb`       | text-only BERT classifier walk-through (Subtask A1) |
+| `03_image_baseline.ipynb`      | image-only ViT classifier walk-through (Subtask A1) |
+| `04_multimodal_baseline.ipynb` | late-fusion multimodal classifier (Subtask A1) |
 | `05_simple_baselines.ipynb`    | majority + random baselines, format checker, scorer |
 
-To extend a notebook from Subtask 1A to 1B/1C, change `--subtask` to `1b`
-or `1c` and use a `.jsonl` output file. The training/prediction loops are
+To extend a notebook from Subtask A1 to A2, change `--subtask` to `a2`
+and use a `.jsonl` output file. The training/prediction loops are
 otherwise identical because the scripts dispatch on `TaskSpec` from
 [`labels.py`](labels.py).
 
@@ -126,7 +125,7 @@ otherwise identical because the scripts dispatch on `TaskSpec` from
 2. Reuse [`labels.py`](labels.py), [`io_utils.py`](io_utils.py), and
    [`metrics.py`](metrics.py) — the format-checker and scorer treat any
    file that conforms to the submission schema as valid.
-3. Emit predictions with `io_utils.write_subtask_1a_tsv` (for 1A) or
-   `io_utils.write_multilabel_jsonl` (for 1B/1C).
+3. Emit predictions with `io_utils.write_subtask_a1_tsv` (for A1) or
+   `io_utils.write_multilabel_jsonl` (for A2).
 
 That is everything — there is no model registry to update.
