@@ -7,7 +7,7 @@ tqdm
 Pillow
 
 # Hugging Face stack
-datasets>=2.18
+datasets>=3.0
 huggingface_hub>=0.24
 transformers>=4.46
 tokenizers
