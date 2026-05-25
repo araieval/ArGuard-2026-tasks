@@ -11,6 +11,7 @@ __Table of contents:__
 - [Setup](#setup)
 - [Data](#data)
 - [Baselines](#baselines)
+- [Reference numbers](#reference-numbers)
 - [Format checker](#format-checker)
 - [Scorer](#scorer)
 - [Submission](#submission)
@@ -164,6 +165,31 @@ python baselines/train_multimodal.py --subtask a1 \
 Swap `--subtask a1` for `a2` (and use a `.jsonl` `--out`) for the fine-grained subtask. The training scripts train on **all** train/dev records for both subtasks — no subset filtering.
 
 For a stronger VLM-based multimodal baseline (Qwen-VL LoRA fine-tune via `ms-swift`), see the research repository — out of scope for this starter kit. See [`baselines/README.md`](baselines/README.md) for hyperparameters and recommended model lists.
+
+---
+
+## Reference numbers
+
+End-to-end smoke run on `dev.jsonl` (500 records, fully labelled). These are
+intentionally short runs — **1 epoch, batch size 16, max sequence length 128,
+seed 42** — meant to confirm the pipeline runs end-to-end and to give a lower
+bound on what a participant should be able to beat with a few hours of tuning.
+They are **not** strong baselines. Numbers are **macro-F1** (the official metric).
+
+| Baseline | Backbone(s) | A1 (binary) | A2 (multi-label fine-grained) |
+|---|---|---:|---:|
+| Majority   | —                                                               | 0.3835 | 0.0403 |
+| Random     | training-set priors (seed 42)                                   |  —     | 0.0992 |
+| Text       | `aubmindlab/bert-base-arabertv02`                               | 0.6197 | 0.2476 |
+| Image      | `google/vit-base-patch16-224`                                   | 0.6961 | 0.1945 |
+| Multimodal | `aubmindlab/bert-base-arabertv02` + `google/vit-base-patch16-224` (late fusion) | 0.6645 | 0.2796 |
+
+Reproducer: [`slurm/test_arguard_starter_kit.sh`](../slurm/test_arguard_starter_kit.sh)
+in the research repo, or run the commands in [Baselines](#baselines) yourself
+with `--target dev` and the same flags.
+
+> Bump `--epochs`, tune `--lr` / `--threshold`, try a stronger backbone, or
+> swap in a VLM via `ms-swift` to push these numbers up.
 
 ---
 
