@@ -178,8 +178,8 @@ They are **not** strong baselines. Numbers are **macro-F1** (the official metric
 
 | Baseline | Backbone(s) | A1 (binary) | A2 (multi-label fine-grained) |
 |---|---|---:|---:|
-| Majority   | —                                                               | 0.3835 | 0.0403 |
-| Random     | training-set priors (seed 42)                                   |  —     | 0.0992 |
+| Majority   | most-frequent class from train                                  | 0.3835 | 0.0403 |
+| Random     | training-set priors (seed 42)                                   | 0.4811 | 0.0992 |
 | Text       | `aubmindlab/bert-base-arabertv02`                               | 0.6197 | 0.2476 |
 | Image      | `google/vit-base-patch16-224`                                   | 0.6961 | 0.1945 |
 | Multimodal | `aubmindlab/bert-base-arabertv02` + `google/vit-base-patch16-224` (late fusion) | 0.6645 | 0.2796 |
