@@ -182,8 +182,10 @@ def main() -> int:
                     help="sigmoid decision threshold for multi-label (default 0.5)")
     ap.add_argument("--output-dir", type=Path, default=Path("results/text"),
                     help="HF Trainer scratch dir (checkpoints + logs)")
-    ap.add_argument("--bf16", action="store_true", default=True)
-    ap.add_argument("--fp16", action="store_true")
+    ap.add_argument("--bf16", action="store_true", default=False,
+                    help="enable bf16 mixed precision (requires a GPU + driver that supports it)")
+    ap.add_argument("--fp16", action="store_true",
+                    help="enable fp16 mixed precision")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     set_seed(args.seed)
@@ -232,7 +234,7 @@ def main() -> int:
         weight_decay=args.weight_decay,
         seed=args.seed,
         data_seed=args.seed,
-        bf16=args.bf16 and not args.fp16,
+        bf16=args.bf16,
         fp16=args.fp16,
         dataloader_num_workers=2,
     )
