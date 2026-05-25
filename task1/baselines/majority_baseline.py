@@ -63,7 +63,8 @@ def _majority_finegrained(train_records: list[dict], allowed: set[str]) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--subtask", required=True, choices=["a1", "a2", "A1", "A2"])
+    ap.add_argument("--subtask", required=True,
+                    choices=["a1", "a2", "A1", "A2", "subtask_a1", "subtask_a2"])
     ap.add_argument("--train", required=True, type=Path, help="training jsonl")
     ap.add_argument("--target", required=True, type=Path,
                     help="jsonl to predict on (e.g., dev.jsonl or dev_test.jsonl)")

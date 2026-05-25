@@ -139,7 +139,8 @@ def set_seed(seed: int) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--subtask", required=True, choices=["a1", "a2", "A1", "A2"])
+    ap.add_argument("--subtask", required=True,
+                    choices=["a1", "a2", "A1", "A2", "subtask_a1", "subtask_a2"])
     ap.add_argument("--model", required=True, help="HF image classification model id")
     ap.add_argument("--data-dir", default="data", type=Path)
     ap.add_argument("--target", default="dev_test")

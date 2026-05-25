@@ -59,7 +59,8 @@ def _finegrained_priors(train: list[dict], allowed: tuple[str, ...]) -> dict[str
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--subtask", required=True, choices=["a1", "a2", "A1", "A2"])
+    ap.add_argument("--subtask", required=True,
+                    choices=["a1", "a2", "A1", "A2", "subtask_a1", "subtask_a2"])
     ap.add_argument("--train", required=True, type=Path)
     ap.add_argument("--target", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)

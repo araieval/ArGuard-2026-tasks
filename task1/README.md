@@ -184,9 +184,10 @@ They are **not** strong baselines. Numbers are **macro-F1** (the official metric
 | Image      | `google/vit-base-patch16-224`                                   | 0.6961 | 0.1945 |
 | Multimodal | `aubmindlab/bert-base-arabertv02` + `google/vit-base-patch16-224` (late fusion) | 0.6645 | 0.2796 |
 
-Reproducer: [`slurm/test_arguard_starter_kit.sh`](../slurm/test_arguard_starter_kit.sh)
-in the research repo, or run the commands in [Baselines](#baselines) yourself
-with `--target dev` and the same flags.
+Reproducer: run the commands listed in [Baselines](#baselines) above with
+`--target dev` and the same hyperparameters (epochs 1, batch 16, max sequence
+length 128, seed 42), then score each prediction file with
+`python scorer/scorer.py --subtask {a1,a2} --gold data/splits/dev.jsonl --predictions <file>`.
 
 > Bump `--epochs`, tune `--lr` / `--threshold`, try a stronger backbone, or
 > swap in a VLM via `ms-swift` to push these numbers up.
