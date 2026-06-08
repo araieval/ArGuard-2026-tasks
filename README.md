@@ -1,4 +1,4 @@
-# [ArGuard](https://araieval.github.io/ArGuard2026/) at ArabicNLP 2026
+# [ArGuard](https://araieval.github.io/ArGuard2026/) at ArabicNLP 2026 
 
 ArGuard is an ArAIEval shared task on harmful content detection in Arabic memes and LLM prompts. This repository follows the structure of the ArAIEval ArabicNLP 2024 task repository and will contain the datasets, format checkers, scorers, baselines, and starter-kit material for each task.
 

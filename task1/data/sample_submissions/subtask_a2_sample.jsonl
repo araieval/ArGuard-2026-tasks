@@ -1,0 +1,3 @@
+{"id": "example_001.jpg", "labels": ["Mocking", "Incitement"]}
+{"id": "example_002.jpg", "labels": ["Humor", "Sarcasm"]}
+{"id": "example_003.jpg", "labels": []}
