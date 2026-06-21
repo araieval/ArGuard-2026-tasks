@@ -2,11 +2,11 @@
 
 ArGuard is an ArAIEval shared task on harmful content detection in Arabic memes and LLM prompts. This repository follows the structure of the ArAIEval ArabicNLP 2024 task repository and will contain the datasets, format checkers, scorers, baselines, and starter-kit material for each task.
 
-- [Task 1: Multimodal Hateful Meme Detection](task1)
+- [Task A (Task 1): Multimodal Hateful Meme Detection](taskA)
 
   Given an Arabic meme image with extracted text, systems classify whether the meme is hateful and identify fine-grained hateful content categories.
 
-- [Task 2: Textual Harmful Prompt Detection](task2)
+- [Task B (Task 2): Textual Harmful Prompt Detection](taskB)
 
   Given an Arabic prompt directed at an LLM, systems classify whether the prompt is safe or unsafe and identify the unsafe prompt category.
 
@@ -16,13 +16,13 @@ ArGuard is an ArAIEval shared task on harmful content detection in Arabic memes 
 .
 ├── bibtex/
 │   └── bibliography.bib
-├── task1/
+├── taskA/
 │   ├── baselines/
 │   ├── data/
 │   ├── format_checker/
 │   ├── scorer/
 │   └── README.md
-├── task2/
+├── taskB/
 │   ├── baselines/
 │   ├── data/
 │   ├── format_checker/
