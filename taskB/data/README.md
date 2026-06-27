@@ -2,6 +2,8 @@
 
 Training, development, and test files for Task B (Task 2) will be released here.
 
+Update on 27 June 2026: **Dev dataset corrrected. ** Dev dataset released with label.
+
 Expected contents:
 
 - JSONL files with Arabic prompts and labels.
