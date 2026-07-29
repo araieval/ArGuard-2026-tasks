@@ -1,4 +1,4 @@
-# [ArGuard](https://araieval.github.io/ArGuard2026/) at ArabicNLP 2026 
+# [ArGuard](https://araieval.github.io/ArGuard2026/) at ArabicNLP 2026
 
 ArGuard is an ArAIEval shared task on harmful content detection in Arabic memes and LLM prompts. This repository follows the structure of the ArAIEval ArabicNLP 2024 task repository and will contain the datasets, format checkers, scorers, baselines, and starter-kit material for each task.
 
@@ -56,12 +56,22 @@ Please check the task-specific directory for licensing information for the respe
 The task overview paper should be cited once available. A provisional BibTeX entry is provided in [bibtex/bibliography.bib](bibtex/bibliography.bib).
 
 ```bibtex
-@inproceedings{arguard:arabicnlp2026-overview,
-  title = {{ArGuard Shared Task}: Harmful Content Detection in Arabic Memes and LLM Prompts},
-  author = {Alam, Firoj and Biswas, Md. Rafiul and Kmainasi, Mohamed Bayan and Shahroor, Ali Ezzat and Zaghouani, Wajdi and Mikros, Georgios and Mubarak, Hamdy},
-  booktitle = {Proceedings of the Arabic Natural Language Processing Conference},
-  year = {2026},
-  note = {To appear}
+@inproceedings{alam-etal-2026-arguard,
+   title = {{ArGuard Shared Task}: Harmful Content Detection in {A}rabic {M}emes and {LLM} {P}rompts},
+    author = "
+      Alam, Firoj and
+      Biswas, Md. Rafiul  and
+      Kmainasi, Mohamed Bayan  and
+      Shahroor, Ali Ezzat  and
+      Mubarak, Hamdy and
+      Mikros, Georgios  and
+      Hasnat, Abul  and
+      Zaghouani, Wajdi",    
+    booktitle = "Proceedings of The Fourth Arabic Natural Language Processing Conference: Shared Tasks",
+    month = oct,
+    year = "2026",
+    address = "Budapest, Hungary",
+    publisher = "Association for Computational Linguistics",
 }
 ```
 
