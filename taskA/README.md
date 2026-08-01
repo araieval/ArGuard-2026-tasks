@@ -103,11 +103,17 @@ data/
 ├── splits/
 │   ├── train.jsonl       (3,500 records, full labels)
 │   ├── dev.jsonl         (500 records,   full labels)
-│   ├── dev_test.jsonl    (500 records,   no labels — leaderboard target)
-│   └── test.jsonl        (released for the final-evaluation phase)
+│   ├── dev_test.jsonl    (500 records,   no labels — development-phase target)
+│   └── test.jsonl        (500 records,   no labels — FINAL submission target)
 └── img/
     └── <id>              # one image file per meme
 ```
+
+> **The final-evaluation phase is open.** `test.jsonl` is the blind test
+> set: 500 triple-annotated memes released with `label = null` and
+> `fine_grained_label = []`. Train on `train` + `dev` and submit
+> predictions on **`test`** to CodaBench. Gold labels for `test` are not
+> released — scoring happens on the organisers' side.
 
 Each JSONL record:
 
@@ -116,11 +122,14 @@ Each JSONL record:
     "id": "f9a8…b1.jpg",
     "image_path": "img/f9a8…b1.jpg",
     "text": "OCR-extracted Arabic text…",
-    "label": "Hateful" | "Not Hateful" ,
+    "label": "Hateful" | "Not Hateful" | null,
     "fine_grained_label": ["Mocking", "Incitement"],
     "annotations": []
 }
 ```
+
+`label` is `null` and `fine_grained_label` is `[]` on the unlabelled
+`dev_test` and `test` splits.
 
 See [`data/README.md`](data/README.md) for details and download options.
 
@@ -163,6 +172,16 @@ python baselines/train_multimodal.py --subtask a1 \
 
 Swap `--subtask a1` for `a2` (and use a `.jsonl` `--out`) for the multi-label fine-grained subtask. The training scripts handle multi-label encoding, `pos_weight`, and threshold tuning automatically.
 
+For the **final-evaluation phase**, point the same commands at the blind test split — `--target test` for the training scripts, or `--target data/splits/test.jsonl` for the majority/random baselines:
+
+```bash
+python baselines/train_multimodal.py --subtask a1 \
+    --text-model aubmindlab/bert-base-arabertv02 \
+    --image-model google/vit-base-patch16-224 \
+    --data-dir data --target test \
+    --out predictions/mm_a1_test.tsv --run-id arabert_vit
+```
+
 For a stronger VLM-based multimodal baseline (Qwen-VL LoRA fine-tune via `ms-swift`), see the research repository — out of scope for this starter kit. See [`baselines/README.md`](baselines/README.md) for hyperparameters and recommended model lists.
 
 ---
@@ -176,7 +195,14 @@ python format_checker/format_checker.py --subtask a1 --predictions predictions/t
 python format_checker/format_checker.py --subtask a2 --predictions predictions/text_a2.jsonl
 ```
 
-The checker validates header / schema, label vocabulary, ID uniqueness, and (when a `--gold` file is supplied) that the prediction IDs match the gold IDs. See [`format_checker/README.md`](format_checker/README.md).
+The checker validates header / schema, label vocabulary, ID uniqueness, and (when a `--gold` file is supplied) that the prediction IDs match the gold IDs. `--gold` accepts a dataset split JSONL directly, so before submitting to the final phase confirm your file covers exactly the 500 blind test IDs:
+
+```bash
+python format_checker/format_checker.py --subtask a1 \
+    --predictions predictions/mm_a1_test.tsv --gold data/splits/test.jsonl
+```
+
+See [`format_checker/README.md`](format_checker/README.md).
 
 ---
 
@@ -196,7 +222,10 @@ python scorer/scorer.py --subtask a2 \
 
 The scorer prints a summary and writes a `metrics.json` next to the predictions file. See [`scorer/README.md`](scorer/README.md).
 
-> During the **development phase**, you submit predictions on the `dev_test` split. Gold labels for `dev_test` are not released — the scorer described above can only be run locally against `dev.jsonl`. The official `dev_test` leaderboard runs the same scorer on the organisers' side.
+> Gold labels are released only for `train` and `dev`, so locally you can
+> only score against `dev.jsonl`. Neither `dev_test` nor `test` ships with
+> labels; the CodaBench leaderboard runs this same scorer against the
+> held-back gold on the organisers' side.
 
 ---
 
@@ -231,12 +260,12 @@ The official submission site is CodaBench:
 - **Subtask A1** — https://www.codabench.org/competitions/16909/
 - **Subtask A2** — https://www.codabench.org/competitions/16910/
 
-Upload your prediction file as `prediction.zip` (containing the single submission file at the archive root).
+Upload your prediction file as `prediction.zip` (containing the single submission file at the archive root). Make sure you select the **Testing Phase** tab before submitting — a file scored against the wrong phase will be rejected for ID mismatch.
 
 ### Guidelines
 
-1. **Development phase** — build and tune your system on `train.jsonl` and `dev.jsonl`. Submit predictions on **`dev_test.jsonl`** to the leaderboard for progress tracking.
-2. **Final-evaluation phase** — submit predictions on the blind **`test.jsonl`** for the official ranking.
+1. **Development phase (closed)** — systems were built and tuned on `train.jsonl` and `dev.jsonl`, with predictions submitted on `dev_test.jsonl` for progress tracking.
+2. **Final-evaluation phase (open)** — submit predictions on the blind **`test.jsonl`** (500 memes) for the official ranking. **Deadline: August 6, 2026, 23:59 AoE** (= August 7, 12:00 UTC).
 
 For each phase:
 - Each team should maintain a single submission account.

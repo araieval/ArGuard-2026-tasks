@@ -38,9 +38,24 @@ python format_checker/format_checker.py --subtask a1 \
     --predictions preds_a1.tsv --gold data/splits/dev.jsonl
 ```
 
-For local development this is most useful with `data/splits/dev.jsonl` as
-the gold file; for blind-test submissions the scorer (server side) runs
-the same comparison against the hidden gold IDs.
+The `--gold` file may be either a **dataset split JSONL** (as written by
+`data/download_data.py` — only the `id` field is read, so labels are not
+required) or another file in submission format.
+
+**Before submitting to the final-evaluation phase, always check your
+predictions against the blind test split** — this catches the most common
+submission failure, predicting on the wrong split:
+
+```bash
+python format_checker/format_checker.py --subtask a1 \
+    --predictions preds_a1_test.tsv --gold data/splits/test.jsonl
+
+python format_checker/format_checker.py --subtask a2 \
+    --predictions preds_a2_test.jsonl --gold data/splits/test.jsonl
+```
+
+The server-side scorer runs the same comparison against the hidden gold
+IDs, and rejects any submission whose ID set does not match exactly.
 
 ## Example error output
 
