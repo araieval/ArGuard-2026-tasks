@@ -42,7 +42,11 @@ The official schedule is maintained on the task website:
   - Task A — [QCRI/ArGuard-Task1](https://huggingface.co/datasets/QCRI/ArGuard-Task1) on the Hugging Face Hub, split `test` (500 memes)
   - Task B — [`taskB/data/`](taskB/data) in this repository
 - Final submission deadline: **August 6, 2026, 23:59 AoE** (= August 7, 12:00 UTC) — final-evaluation phase **open now**, same deadline for both tasks
-- Camera-ready system description papers: August 22, 2026
+- Leaderboard release: August 8, 2026
+- System description papers due: August 18, 2026
+- Notification of acceptance: August 30, 2026
+- Camera-ready papers due: September 10, 2026
+- ArabicNLP 2026 (co-located with EMNLP): October 24–29, 2026
 
 ## Licensing
 
