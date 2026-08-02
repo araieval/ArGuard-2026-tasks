@@ -27,15 +27,18 @@ python data/download_data.py --splits test
 |--------------|------:|----------|----------------------------|--------------------------------------------|
 | `train`      | 3,500 | full     | development phase          | model training                             |
 | `dev`        |   500 | full     | development phase          | hyperparameter selection, local evaluation |
-| `dev_test`   |   500 | **none** | development phase          | leaderboard submissions during development (phase closed) |
+| `dev_test`   |   500 | full     | development phase          | dev-phase leaderboard target; **labels now released** |
 | `test`       |   500 | **none** | final-evaluation phase     | blind final ranking (triple-annotated gold) |
 
-> Both `dev_test` and `test` are released **unlabelled** — `label = null`
-> and `fine_grained_label = []`. The gold labels for `test` are never
-> published; scoring happens on CodaBench.
+> **`test` is the only unlabelled split** (`label = null`,
+> `fine_grained_label = []`). Its gold labels are never published;
+> scoring happens on CodaBench.
 >
 > **The final-evaluation phase is open: submit your predictions on
-> `test`.** The `dev_test` split is no longer the submission target.
+> `test`.** The `dev_test` split is no longer a submission target — the
+> development phase is closed and its gold labels have been released, so
+> you may now use `dev_test` as **additional labelled training data**. It
+> is disjoint from `test`.
 
 ## Record schema
 
@@ -53,10 +56,10 @@ python data/download_data.py --splits test
 - `id` — original meme filename; used to match predictions to gold.
 - `image_path` — relative to this directory (`img/<id>`).
 - `text` — OCR-extracted overlaid text. Empty string is allowed.
-- `label` — binary label for Subtask A1. `null` on `dev_test` and `test`.
+- `label` — binary label for Subtask A1. `null` only on the blind `test` split.
 - `fine_grained_label` — multi-label sub-types from the unified A2 vocab.
   Hateful memes use hateful sub-types; non-hateful memes use
-  `{Humor, Sarcasm, Other}`. Empty list on `dev_test` and `test`.
+  `{Humor, Sarcasm, Other}`. Empty list only on the blind `test` split.
 - `annotations` — placeholder kept for backwards compatibility with the
   research repo. Per-annotator records are not distributed publicly.
 

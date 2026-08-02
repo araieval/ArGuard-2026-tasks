@@ -37,7 +37,7 @@ ArGuard is an ArAIEval shared task on harmful content detection in Arabic memes 
 The official schedule is maintained on the task website:
 
 - Task website, training and development data, and evaluation scripts: May 25, 2026
-- Development phase (`dev_test` leaderboard): May 25 – July 31, 2026 — **closed**
+- Development phase (`dev_test` leaderboard): May 25 – July 31, 2026 — **closed**; `dev_test` gold labels have since been **released** and may be used as additional training data
 - Blind test set release: August 1, 2026 — **released**, unlabelled, for both tasks:
   - Task A — [QCRI/ArGuard-Task1](https://huggingface.co/datasets/QCRI/ArGuard-Task1) on the Hugging Face Hub, split `test` (500 memes)
   - Task B — [`taskB/data/`](taskB/data) in this repository

@@ -103,7 +103,7 @@ data/
 ├── splits/
 │   ├── train.jsonl       (3,500 records, full labels)
 │   ├── dev.jsonl         (500 records,   full labels)
-│   ├── dev_test.jsonl    (500 records,   no labels — development-phase target)
+│   ├── dev_test.jsonl    (500 records,   full labels — extra training data)
 │   └── test.jsonl        (500 records,   no labels — FINAL submission target)
 └── img/
     └── <id>              # one image file per meme
@@ -111,9 +111,10 @@ data/
 
 > **The final-evaluation phase is open.** `test.jsonl` is the blind test
 > set: 500 triple-annotated memes released with `label = null` and
-> `fine_grained_label = []`. Train on `train` + `dev` and submit
-> predictions on **`test`** to CodaBench. Gold labels for `test` are not
-> released — scoring happens on the organisers' side.
+> `fine_grained_label = []`. Train on `train` + `dev` + `dev_test` (the
+> `dev_test` gold labels have been released, giving you 4,500 labelled
+> memes) and submit predictions on **`test`** to CodaBench. Gold labels
+> for `test` are not released — scoring happens on the organisers' side.
 
 Each JSONL record:
 
@@ -128,8 +129,8 @@ Each JSONL record:
 }
 ```
 
-`label` is `null` and `fine_grained_label` is `[]` on the unlabelled
-`dev_test` and `test` splits.
+`label` is `null` and `fine_grained_label` is `[]` on the blind `test`
+split only; every other split now ships with full labels.
 
 See [`data/README.md`](data/README.md) for details and download options.
 
@@ -223,9 +224,10 @@ python scorer/scorer.py --subtask a2 \
 The scorer prints a summary and writes a `metrics.json` next to the predictions file. See [`scorer/README.md`](scorer/README.md).
 
 > Gold labels are released only for `train` and `dev`, so locally you can
-> only score against `dev.jsonl`. Neither `dev_test` nor `test` ships with
-> labels; the CodaBench leaderboard runs this same scorer against the
-> held-back gold on the organisers' side.
+> `train`, `dev` and `dev_test` all ship with gold labels, so you can score
+> against any of them locally. Only the blind `test` split has no labels;
+> the CodaBench leaderboard runs this same scorer against the held-back
+> gold on the organisers' side.
 
 ---
 
@@ -264,7 +266,7 @@ Upload your prediction file as `prediction.zip` (containing the single submissio
 
 ### Guidelines
 
-1. **Development phase (closed)** — systems were built and tuned on `train.jsonl` and `dev.jsonl`, with predictions submitted on `dev_test.jsonl` for progress tracking.
+1. **Development phase (closed)** — systems were built and tuned on `train.jsonl` and `dev.jsonl`, with predictions submitted on `dev_test.jsonl` for progress tracking. The `dev_test` gold labels have since been released, so all 4,500 labelled memes (`train` + `dev` + `dev_test`) may be used for training.
 2. **Final-evaluation phase (open)** — submit predictions on the blind **`test.jsonl`** (500 memes) for the official ranking. **Deadline: August 6, 2026, 23:59 AoE** (= August 7, 12:00 UTC).
 
 For each phase:
