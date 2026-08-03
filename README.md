@@ -53,7 +53,7 @@ Please check the task-specific directory for licensing information for the respe
 
 ## Citation
 
-The task overview paper should be cited once available. A provisional BibTeX entry is provided in [bibtex/bibliography.bib](bibtex/bibliography.bib).
+The dataset and task overview papers, listed below, should be cited. Bib entries are also provided in [bibtex/bibliography.bib](bibtex/bibliography.bib).
 
 ```bibtex
 @inproceedings{alam-etal-2026-arguard,
@@ -73,6 +73,15 @@ The task overview paper should be cited once available. A provisional BibTeX ent
     address = "Budapest, Hungary",
     publisher = "Association for Computational Linguistics",
 }
+
+@article{kmainasi2026ahamemes,
+  title   = {{AHA-Memes}: A Fine-Grained Multimodal Benchmark for Understanding Hate in Arabic Memes},
+  author  = {Mohamed Bayan Kmainasi and Ali Ezzat Shahroor and Abul Hasnat and Md. Rafiul Biswas and Wajdi Zaghouani and Firoj Alam},
+  journal = {arXiv preprint arXiv:2607.27393},
+  year    = {2026},
+  url     = {https://arxiv.org/abs/2607.27393}
+}
+
 ```
 
 ## Related Resources
