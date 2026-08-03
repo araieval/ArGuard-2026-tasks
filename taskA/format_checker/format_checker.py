@@ -34,6 +34,7 @@ A short error report is written to STDERR.
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from collections import Counter
@@ -57,6 +58,44 @@ log = logging.getLogger("format_checker")
 
 class FormatError(Exception):
     """Raised when the submission file fails any structural check."""
+
+
+def read_gold_ids(gold_path: Path) -> set[str]:
+    """Collect the gold ID set, whatever shape the gold file has.
+
+    Accepts either a submission-format file (A1 TSV / A2 JSONL) or a
+    dataset split JSONL as downloaded by ``data/download_data.py``
+    (``{"id": ..., "image_path": ..., "text": ..., "label": ...}``) —
+    participants naturally reach for ``data/splits/test.jsonl`` here, so
+    only the ``id`` field is required.
+    """
+    ids: set[str] = set()
+    with gold_path.open("r", encoding="utf-8") as fh:
+        lines = [ln for ln in fh if ln.strip()]
+
+    if not lines:
+        raise FormatError(f"{gold_path}: file is empty")
+
+    if lines[0].lstrip().startswith("{"):
+        for n, line in enumerate(lines, start=1):
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError as e:
+                raise FormatError(f"{gold_path}:{n}: invalid JSON ({e})")
+            if "id" not in rec:
+                raise FormatError(f"{gold_path}:{n}: record has no 'id' field")
+            ids.add(str(rec["id"]))
+        return ids
+
+    # Otherwise: TSV in A1 submission format (header id/label/run_id).
+    try:
+        return {r["id"] for r in read_subtask_a1_tsv(gold_path)}
+    except ValueError as e:
+        raise FormatError(
+            f"{gold_path}: not a recognised gold file — expected a dataset "
+            f"split JSONL, an A2 submission JSONL, or an A1 submission TSV "
+            f"({e})"
+        )
 
 
 # --------------------------------------------------------------------------
@@ -101,7 +140,7 @@ def check_subtask_a1(pred_path: Path, gold_path: Path | None = None) -> None:
         raise FormatError(f"{pred_path}: at least one row has an empty id")
 
     if gold_path is not None:
-        gold_ids = {r["id"] for r in read_subtask_a1_tsv(gold_path)}
+        gold_ids = read_gold_ids(gold_path)
         _check_id_match(set(ids), gold_ids, pred_path, gold_path)
 
     log.info(
@@ -163,7 +202,7 @@ def check_subtask_a2(
         )
 
     if gold_path is not None:
-        gold_ids = {r["id"] for r in read_multilabel_jsonl(gold_path)}
+        gold_ids = read_gold_ids(gold_path)
         _check_id_match(set(ids), gold_ids, pred_path, gold_path)
 
     log.info(

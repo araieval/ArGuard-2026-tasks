@@ -37,9 +37,16 @@ ArGuard is an ArAIEval shared task on harmful content detection in Arabic memes 
 The official schedule is maintained on the task website:
 
 - Task website, training and development data, and evaluation scripts: May 25, 2026
-- Registration deadline and blind test set release: July 25, 2026
-- Final submission deadline and release of final results: July 30, 2026
-- Camera-ready system description papers: August 22, 2026
+- Development phase (`dev_test` leaderboard): May 25 – July 31, 2026 — **closed**; `dev_test` gold labels have since been **released** and may be used as additional training data
+- Blind test set release: August 1, 2026 — **released**, unlabelled, for both tasks:
+  - Task A — [QCRI/ArGuard-Task1](https://huggingface.co/datasets/QCRI/ArGuard-Task1) on the Hugging Face Hub, split `test` (500 memes)
+  - Task B — [`taskB/data/`](taskB/data) in this repository
+- Final submission deadline: **August 6, 2026, 23:59 AoE** (= August 7, 12:00 UTC) — final-evaluation phase **open now**, same deadline for both tasks
+- Leaderboard release: August 8, 2026
+- System description papers due: August 18, 2026
+- Notification of acceptance: August 30, 2026
+- Camera-ready papers due: September 10, 2026
+- ArabicNLP 2026 (co-located with EMNLP): October 24–29, 2026
 
 ## Licensing
 
